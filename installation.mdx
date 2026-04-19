@@ -1,0 +1,103 @@
+---
+title: "Installation: global, project-scoped, and bulk installs"
+description: "Install Agent Skills globally or per project for Claude Code and Kiro. Symlinks keep every installed skill up to date with a single git pull."
+---
+
+Agent Skills uses symlinks so you clone the repository once and install individual skills by pointing your agent's skills directory at the cloned folder. Because symlinks follow the filesystem path, running `git pull` inside the cloned repository updates every installed skill immediately — no reinstall needed.
+
+Start by cloning the repository to a permanent location on your machine:
+
+```bash
+git clone git@github.com:dmorand17/agent-skills.git
+cd agent-skills
+```
+
+## Global installation
+
+A global install makes a skill available across all your projects. Claude Code reads from `~/.claude/skills/` and Kiro reads from `~/.kiro/skills/`.
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    # Create the skills directory if it doesn't exist
+    mkdir -p ~/.claude/skills
+
+    ln -s $(pwd)/bash ~/.claude/skills/bash
+    ln -s $(pwd)/terraform ~/.claude/skills/terraform
+    # Repeat for any other skills you want
+    ```
+  </Tab>
+  <Tab title="Kiro">
+    ```bash
+    # Create the skills directory if it doesn't exist
+    mkdir -p ~/.kiro/skills
+
+    ln -s $(pwd)/bash ~/.kiro/skills/bash
+    ln -s $(pwd)/terraform ~/.kiro/skills/terraform
+    # Repeat for any other skills you want
+    ```
+  </Tab>
+</Tabs>
+
+## Project-scoped installation
+
+A project-scoped install makes a skill available only when your agent is running inside a specific project directory. This is useful when you want to apply a skill to one codebase without affecting others.
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    ln -s $(pwd)/terraform /path/to/project/.claude/skills/terraform
+    ```
+  </Tab>
+  <Tab title="Kiro">
+    ```bash
+    ln -s $(pwd)/terraform /path/to/project/.kiro/skills/terraform
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  You can mix global and project-scoped installs. A project-scoped skill takes precedence over a global one with the same name.
+</Note>
+
+## Install all skills at once
+
+To install every skill in a single command, use the loop below. The `-sf` flag makes the operation idempotent — running it again updates existing symlinks safely.
+
+The full list of available skills is:
+
+- `bash`
+- `skill-creator`
+- `git-commit`
+- `markdown-convert`
+- `project-memory`
+- `terraform`
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    for skill in bash skill-creator git-commit markdown-convert project-memory terraform; do
+      ln -sf "$(pwd)/$skill" ~/.claude/skills/$skill
+    done
+    ```
+  </Tab>
+  <Tab title="Kiro">
+    ```bash
+    for skill in bash skill-creator git-commit markdown-convert project-memory terraform; do
+      ln -sf "$(pwd)/$skill" ~/.kiro/skills/$skill
+    done
+    ```
+  </Tab>
+</Tabs>
+
+## Keeping skills up to date
+
+Because you installed skills with symlinks, there is nothing extra to do when the upstream repository changes. Pull the latest changes and all installed skills update automatically:
+
+```bash
+cd agent-skills && git pull
+```
+
+<Tip>
+  If you add a newly released skill after pulling, just create a new symlink for it. Existing symlinks do not need to be recreated.
+</Tip>

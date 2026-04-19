@@ -1,0 +1,138 @@
+---
+title: "Evaluating agent skills: test, measure, and improve them"
+description: "Verify that your skill triggers correctly and produces good output by running test prompts, reviewing results, and refining the description and body."
+---
+
+Writing a skill draft is only the first step. You need to verify that it actually triggers when it should, doesn't trigger when it shouldn't, and produces output that matches your expectations. A skill that never activates — or activates on the wrong prompts — provides no value. The evaluation loop is how you close the gap between what you intended and what the skill actually does.
+
+## The eval loop
+
+<Steps>
+  <Step title="Write 2-3 realistic test prompts">
+    Draft prompts that reflect how real users would ask for help — not abstract descriptions of the skill, but concrete requests with enough context that Claude would actually benefit from consulting the skill.
+
+    Good test prompts are specific: they include file names, tool names, personal context, or enough background that the intent is clear. Avoid one-liners like "help me with git" — they're too simple and won't reliably trigger any skill regardless of description quality.
+
+    Aim for variety: one typical use case, one edge case, and one prompt that sits near the boundary of what the skill should handle.
+  </Step>
+  <Step title="Run the skill on each prompt">
+    Install the skill and run each test prompt in Claude Code or Claude.ai. If you have access to subagents, you can run all prompts in parallel to save time. For each prompt, run two versions side by side: one with the skill installed and one without. The difference between the two outputs tells you how much value the skill is actually adding.
+
+    Save outputs so you can compare them across iterations.
+  </Step>
+  <Step title="Review outputs qualitatively">
+    For each test case, ask:
+
+    - Did the skill trigger? (Check whether the output reflects the skill's guidance.)
+    - Does the output match what you expected?
+    - Is there anything missing, wrong, or inconsistent compared to what the skill body describes?
+
+    If the skill didn't trigger at all, the problem is almost always the description. If it triggered but produced the wrong output, the problem is in the skill body.
+  </Step>
+  <Step title="Revise the skill based on feedback">
+    Make targeted changes based on what you observed. A few principles:
+
+    - **Generalize from failures.** Don't patch around the specific test case — understand why it failed and fix the underlying instruction.
+    - **Keep the skill lean.** Remove instructions that didn't make a visible difference. Every token in the skill body costs context window space on every invocation.
+    - **Explain the why.** If a constraint produced the wrong behavior, try replacing a rigid rule with an explanation of the reasoning behind it.
+
+    If you notice that all your test runs independently wrote the same helper script, that's a strong signal the script belongs in a `scripts/` directory inside the skill, bundled for reuse.
+  </Step>
+  <Step title="Repeat until satisfied">
+    Re-run the same test prompts after each revision. Keep iterating until:
+
+    - The skill triggers reliably on prompts it should handle.
+    - Outputs consistently match your expectations.
+    - Feedback from each review is empty or positive.
+
+    Once qualitative results look good, expand the test set and try at larger scale.
+  </Step>
+</Steps>
+
+## Optimizing the trigger description
+
+The `description` field in `SKILL.md` frontmatter is the primary mechanism controlling whether Claude invokes a skill. Claude reads all installed skill descriptions and decides which (if any) to consult based on how well they match the current request.
+
+### How skill triggering works
+
+Skills appear in Claude's `available_skills` list with their name and description. Claude only consults skills for tasks it can't easily handle on its own — simple, one-step queries may not trigger a skill even if the description is a perfect match, because Claude can handle them directly with basic tools. Complex, multi-step, or specialized queries trigger skills reliably when the description matches.
+
+This means your eval queries need to be substantive enough that Claude would genuinely benefit from consulting a skill. "Read this file" is a poor test case — it won't trigger anything regardless of description quality.
+
+### Writing good trigger eval queries
+
+When evaluating whether a description triggers correctly, the quality of your test queries determines the quality of the evaluation. Use realistic, detailed prompts — not abstract requests.
+
+<Tabs>
+  <Tab title="Good queries">
+    ```
+    ok so my boss just sent me this xlsx file (its in my downloads, called
+    something like 'Q4 sales final FINAL v2.xlsx') and she wants me to add
+    a column that shows the profit margin as a percentage. The revenue is
+    in column C and costs are in column D i think
+    ```
+
+    ```
+    I need to write a bash script that watches a directory for new .csv
+    files, processes each one through a Python script, and moves them
+    to an archive folder when done. Should handle errors gracefully.
+    ```
+
+    ```
+    just merged a big refactor branch, now i need to write the commit
+    message. changed how we handle auth tokens — moved from session
+    storage to httpOnly cookies, updated the middleware, and removed
+    the old TokenService class
+    ```
+  </Tab>
+  <Tab title="Bad queries">
+    ```
+    Format this data
+    ```
+
+    ```
+    Extract text from PDF
+    ```
+
+    ```
+    Create a chart
+    ```
+
+    ```
+    Write a commit message
+    ```
+  </Tab>
+</Tabs>
+
+Good queries include file names, personal context about the user's situation, column names, company names, or a bit of backstory. Some might be lowercase, contain abbreviations, or use casual speech. Bad queries are too short, too abstract, or so simple that Claude would handle them without any skill.
+
+### Building a trigger eval set
+
+A complete trigger eval set has two types of queries:
+
+**Should-trigger queries (8-10):** Cover different phrasings of the same intent — some formal, some casual. Include cases where the user clearly needs the skill but doesn't explicitly name it. Include uncommon use cases and cases where the skill competes with a neighboring skill.
+
+**Should-not-trigger queries (8-10):** The most valuable ones are near-misses — queries that share keywords with the skill but actually need something different. Queries that touch adjacent domains. Cases where a naive keyword match would trigger but shouldn't. These are the queries that reveal over-triggering.
+
+<Warning>
+  Don't make should-not-trigger queries obviously irrelevant. "Write a Fibonacci function" as a negative test for a bash skill is too easy — it doesn't test anything meaningful. Negative cases should be genuinely tricky.
+</Warning>
+
+### The description optimization loop
+
+Once you have a solid eval set, you can run a systematic optimization loop to improve the description:
+
+1. Generate 20 eval queries (mix of should-trigger and should-not-trigger).
+2. Review the eval set — adjust queries, toggle should-trigger flags, add edge cases.
+3. Run the optimization script, which splits the set into training and held-out test data, evaluates the current description, proposes improvements, and iterates up to 5 times.
+4. Apply the best description found (selected by test score, not training score, to avoid overfitting).
+
+The `skill-creator` skill handles this process end-to-end. See [Skill Creator](/skills/skill-creator) for details.
+
+## Tips for effective testing
+
+- **Test against the baseline.** Run the same prompt without the skill installed. If the outputs are identical, the skill isn't adding value — or isn't triggering.
+- **Watch for overtriggering.** A skill that triggers on unrelated prompts adds noise and wastes context. Include negative test cases in your eval set.
+- **Read the full output, not just the final result.** If the skill is making Claude waste time on unproductive intermediate steps, remove the instructions causing that behavior.
+- **Keep test cases stable across iterations.** Use the same prompts each time so you can see whether a change improved or regressed behavior.
+- **Expand the test set after the core loop.** Start with 2-3 prompts, then add more once the skill stabilizes to catch edge cases you didn't anticipate.

@@ -1,97 +1,65 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Agent Skills: Reusable Skills for Claude Code & Kiro"
+description: "A curated library of drop-in skills that extend Claude Code and Kiro agents with bash scripting, git conventions, Terraform, and more."
 ---
 
-## Setting up
+Agent Skills is a collection of reusable, modular skills for Claude Code and Kiro agents. Each skill is a self-contained `SKILL.md` file that teaches your agent a specialized workflow — from writing bash scripts to following Conventional Commits to managing Terraform infrastructure. Install once via symlink, and your agent automatically applies best practices whenever relevant.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install your first skill and see it in action in under two minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Installation guide" icon="download" href="/installation">
+    Learn how to install skills globally, per-project, or for both Claude Code and Kiro.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Skills reference" icon="book" href="/skills/bash">
+    Browse all six skills with full descriptions, examples, and usage guidance.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Author a skill" icon="pen-to-square" href="/guides/authoring-skills">
+    Build your own skills to encode custom workflows, domain knowledge, and tooling conventions.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Available skills
 
-Everything you need to create world-class documentation.
+<CardGroup cols={2}>
+  <Card title="Bash" icon="terminal" href="/skills/bash">
+    Enforce the main-function pattern, argument parsing, dependency checking, and timestamped logging in every shell script.
+  </Card>
+  <Card title="Git Commit" icon="code-branch" href="/skills/git-commit">
+    Write commit messages that follow the Conventional Commits specification automatically.
+  </Card>
+  <Card title="Markdown Convert" icon="file-lines" href="/skills/markdown-convert">
+    Convert any markdown file to Word, PDF, or HTML using pandoc with a single request.
+  </Card>
+  <Card title="Project Memory" icon="database" href="/skills/project-memory">
+    Set up a structured knowledge base that tracks bugs, decisions, key facts, and work history across sessions.
+  </Card>
+  <Card title="Terraform" icon="cloud" href="/skills/terraform">
+    Apply opinionated Terraform and OpenTofu best practices for modules, naming, testing, and CI/CD pipelines.
+  </Card>
+  <Card title="Skill Creator" icon="wand-magic-sparkles" href="/skills/skill-creator">
+    Draft, evaluate, and iteratively improve new skills using a built-in test-and-review workflow.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## How it works
 
-## Need inspiration?
+<Steps>
+  <Step title="Clone the repository">
+    Clone `agent-skills` once to a local directory on your machine.
+  </Step>
+  <Step title="Symlink the skills you want">
+    Create a symlink from each skill folder into `~/.claude/skills/` (Claude Code) or `~/.kiro/skills/` (Kiro). The agent discovers skills automatically at startup.
+  </Step>
+  <Step title="Your agent applies skills automatically">
+    When you ask your agent to write a bash script, commit changes, or manage Terraform, it consults the matching skill and applies its guidance — no extra prompting needed.
+  </Step>
+  <Step title="Keep skills up to date">
+    Run `git pull` inside the cloned repo. All symlinked skills update automatically.
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Tip>
+  You can also install skills on a per-project basis by symlinking into `.claude/skills/` or `.kiro/skills/` inside a specific project directory.
+</Tip>

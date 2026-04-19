@@ -1,0 +1,136 @@
+---
+title: "Authoring agent skills: write a SKILL.md from scratch"
+description: "Learn how to design, write, and publish a custom skill that encodes domain knowledge, company conventions, or specialized workflows for your agent."
+---
+
+Authoring a skill is how you teach your agent something it doesn't know — your deployment process, your team's coding conventions, your company's internal tooling. A well-written skill encodes that knowledge once and applies it automatically across every relevant task, so you stop repeating yourself in prompts and start getting consistent results.
+
+## When to create a skill vs prompting directly
+
+A one-off instruction belongs in a prompt. A skill is worth writing when:
+
+- You find yourself pasting the same instructions into multiple conversations.
+- A workflow has enough steps that forgetting any one of them leads to mistakes.
+- You want to share a workflow with a team or across multiple machines.
+- The behavior depends on domain knowledge Claude doesn't already have (internal APIs, proprietary schemas, company conventions).
+
+If Claude already handles the task well with no extra guidance, a skill adds overhead without benefit. Only add context Claude doesn't already have — challenge each piece with "Does Claude really need this?"
+
+## Authoring process
+
+<Steps>
+  <Step title="Capture intent">
+    Before writing a single line, nail down three things:
+
+    1. **What should the skill enable Claude to do?** Be specific — "write Conventional Commits messages" rather than "help with git".
+    2. **When should it trigger?** List the phrases, file types, and contexts that signal the skill is needed.
+    3. **What does good output look like?** Describe the expected format, tone, or structure.
+
+    If you're capturing a workflow you just walked through with Claude, extract answers from the conversation history first — the tools used, the sequence of steps, any corrections you made.
+  </Step>
+  <Step title="Write the SKILL.md frontmatter">
+    The frontmatter is the triggering mechanism. Claude reads the `name` and `description` fields from every installed skill and decides whether to consult the full skill body based on that description alone.
+
+    ```yaml
+    ---
+    name: git-commit
+    description: >
+      Help write git commit messages using standard git conventions. Use this skill
+      when the user asks to write, generate, format, or review a git commit message,
+      or when they need help phrasing a commit. Do NOT use for branches, PRs,
+      merges, or other git operations — only for commit message writing.
+    ---
+    ```
+
+    The description must cover both **what the skill does** and **when to use it**. All "when to use" context belongs here, not in the body. See the [trigger description](#the-trigger-description-field) section below for how to write an effective one.
+  </Step>
+  <Step title="Write the skill body">
+    The body is the actual instructions Claude receives when the skill triggers. Structure it around the workflow:
+
+    - Use headers to separate stages or concerns.
+    - Prefer imperative instructions ("Run the linter before committing") over passive descriptions.
+    - Explain the **why** behind rules — Claude can generalize better from reasoning than from rigid commands.
+    - Include a concrete example where the expected input/output relationship isn't obvious.
+    - Keep it under 500 lines. If you're approaching that limit, move reference material into a `references/` subdirectory and link to it.
+  </Step>
+  <Step title="Write the README.md">
+    The README is the human-facing entry point — for someone discovering the skill on GitHub or in a shared folder. It should cover:
+
+    1. **Title and one-liner** — what the skill does in a single sentence.
+    2. **Overview** — 3-5 bullet points covering the main capabilities.
+    3. **Installation** — symlink instructions (see below).
+    4. **Usage** — 3-5 concrete example prompts a real user would type, showing the range of things the skill handles.
+    5. **Project structure** — a file tree with brief annotations.
+
+    Keep it short. A reader should be able to skim it in 30 seconds. Don't duplicate content from `SKILL.md` — the README is for humans setting up the skill, not instructions for Claude.
+  </Step>
+  <Step title="Install and test">
+    Symlink the skill directory into your agent's skills folder:
+
+    ```bash
+    # Claude Code — global install
+    ln -s $(pwd)/my-skill ~/.claude/skills/my-skill
+
+    # Kiro — global install
+    ln -s $(pwd)/my-skill ~/.kiro/skills/my-skill
+    ```
+
+    Then try 2-3 realistic prompts — the kind of thing you'd actually type. Verify the skill triggers when it should and produces the expected output. If it doesn't trigger reliably, revisit your description (see [evaluating skills](/guides/evaluating-skills)).
+  </Step>
+</Steps>
+
+## The trigger description field
+
+The `description` field is the most important part of your skill. It's the only thing Claude reads when deciding whether to consult the full skill body. A weak description causes undertriggering — the skill exists but never activates.
+
+Write descriptions that are slightly "pushy": include explicit signals about when to use the skill, even if it feels redundant.
+
+**Passive (undertriggers):**
+> "Best practices for bash scripts including argument parsing and error handling."
+
+**Active (triggers reliably):**
+> "Apply comprehensive bash scripting standards including main function pattern, usage documentation, argument parsing, dependency checking, and error handling. Triggers when creating/editing .sh files, bash scripts, or discussing shell scripting, deployment scripts, automation tasks, or bash conventions."
+
+The active version names specific file extensions, use cases, and keywords. If a user says "I need a deployment script" or "help me with this .sh file," the description matches and the skill loads.
+
+<Tip>
+  Include both what the skill does AND when to use it. For skills with close neighbors (e.g., a git skill that only covers commit messages), add explicit exclusions: "Do NOT use for branches, PRs, merges, or other git operations."
+</Tip>
+
+## Writing principles
+
+<AccordionGroup>
+  <Accordion title="Concise is key">
+    The skill body shares context window space with the system prompt, conversation history, and user requests. Only include what Claude doesn't already know — standard language features, common libraries, and well-known conventions don't need explaining. Challenge every paragraph: "Does Claude really need this? Does it justify its token cost?"
+
+    Prefer a short concrete example over a long verbal explanation. Examples are faster to read and harder to misinterpret.
+  </Accordion>
+  <Accordion title="Set appropriate degrees of freedom">
+    Match the specificity of your instructions to how much variation is acceptable:
+
+    - **High freedom** — use natural language. Multiple valid approaches exist, and Claude should use judgment.
+    - **Medium freedom** — use pseudocode or parameterized patterns. A preferred approach exists but some variation is fine.
+    - **Low freedom** — provide exact scripts or fixed sequences. The task is fragile, consistency is critical, or a specific order must be followed.
+
+    Over-constraining a flexible task wastes tokens and produces rigid, brittle behavior. Under-constraining a fragile task leads to inconsistent results.
+  </Accordion>
+  <Accordion title="Explain the why, not just the what">
+    Claude is good at reasoning. When you explain why a rule exists, Claude can apply it correctly to situations your instructions didn't anticipate. If you find yourself writing `ALWAYS` or `NEVER` in caps, that's a signal to pause and ask: "Can I explain the reasoning instead?"
+
+    Instead of: "ALWAYS use `set -euo pipefail` at the top of every script."
+    Try: "Use `set -euo pipefail` at the top of every script so that unset variables, failed commands, and broken pipes all cause an immediate exit — silent failures are much harder to debug than loud ones."
+  </Accordion>
+  <Accordion title="Use progressive disclosure">
+    Skills load in three levels: metadata (always in context), the SKILL.md body (loaded when the skill triggers), and bundled resources (loaded on demand). Put the most important instructions in the body and move large reference tables, schemas, or examples into `references/` files. Point to them explicitly from the body so Claude knows when to load them.
+  </Accordion>
+</AccordionGroup>
+
+## What not to include
+
+Don't create extra documentation files alongside a skill:
+
+- `INSTALLATION_GUIDE.md` — installation instructions belong in `README.md`.
+- `QUICK_REFERENCE.md` — unless it IS the skill content, move it into `references/`.
+- `CHANGELOG.md` — not needed for a skill directory.
+
+A `README.md` is appropriate because it's the human-facing entry point. Everything else should only be created if it's directly needed to do the job.

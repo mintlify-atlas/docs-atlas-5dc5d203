@@ -1,0 +1,98 @@
+---
+title: "Git Commit skill: write Conventional Commits messages"
+description: "Generate well-formed git commit messages following the Conventional Commits specification with correct type, scope, subject, body, and footer fields."
+---
+
+The Git Commit skill helps write git commit messages that follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. Given a description of what changed, it produces a properly formatted commit message with the right type, an optional scope, an imperative-mood subject, and — when needed — a body and footer. The skill covers all standard types, breaking-change notation, and issue references.
+
+<Note>
+This skill applies only to **commit message writing**. It does not apply to branch naming, pull requests, merges, rebases, or any other git operation.
+</Note>
+
+## When the skill triggers
+
+Use this skill when the user asks to:
+
+- Write, generate, format, or review a git commit message
+- Help phrase a commit for a set of changes
+- Convert a casual description into a conventional commit
+
+## Commit message format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+- The **header** (type, scope, subject) is mandatory
+- The **body** and **footer** are optional
+- No line should exceed 72 characters (100 max as an absolute limit)
+- A blank line separates the header, body, and footer from each other
+
+## Types
+
+| Type | Purpose |
+|------|---------|
+| `feat` | New feature or capability |
+| `fix` | Bug fix or correction |
+| `docs` | Documentation-only changes |
+| `style` | Formatting changes (no content changes) |
+| `refactor` | Restructuring without adding or removing functionality |
+| `test` | Adding or updating tests |
+| `chore` | Build process or auxiliary tool changes |
+| `build` | Build-related changes |
+| `ci` | CI-related changes |
+| `perf` | Performance improvements |
+| `revert` | Reverting a previous commit |
+
+## Guidelines
+
+- Use **imperative mood**: "add" not "added" or "adds"
+- Don't capitalize the first letter of the subject
+- No period at the end of the subject line
+- Scope is optional but recommended — use the folder name or topic area (e.g., `auth`, `api`, `cli`)
+- The body explains **what** and **why**, not how
+- Breaking changes: add `!` after the type/scope (e.g., `feat(api)!: remove deprecated endpoint`)
+- Reference issues in the footer: `Closes #123`
+
+## Example
+
+<Tabs>
+  <Tab title="Basic commit">
+    **Input:** "added user auth with JWT tokens"
+
+    **Output:**
+    ```
+    feat(auth): implement JWT-based authentication
+    ```
+  </Tab>
+  <Tab title="With body and footer">
+    **Input:** "fixed the login bug where sessions expired too early, closes issue 42"
+
+    **Output:**
+    ```
+    fix(auth): correct premature session expiration
+
+    Session tokens were being validated against creation time instead of
+    last-activity time, causing active users to be logged out unexpectedly.
+
+    Closes #42
+    ```
+  </Tab>
+  <Tab title="Breaking change">
+    **Input:** "renamed the /users endpoint to /accounts, this breaks existing clients"
+
+    **Output:**
+    ```
+    feat(api)!: rename /users endpoint to /accounts
+
+    Aligns the API surface with the new account-centric data model.
+    Clients must update their base URLs before the next release.
+
+    BREAKING CHANGE: /users is no longer available; use /accounts instead.
+    ```
+  </Tab>
+</Tabs>

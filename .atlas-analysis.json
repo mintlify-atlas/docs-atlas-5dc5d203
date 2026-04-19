@@ -1,0 +1,63 @@
+{
+  "projectType": "general",
+  "projectName": "Agent Skills",
+  "projectDescription": "A curated collection of reusable skills for Claude Code and Kiro agents, covering bash scripting, git commits, markdown conversion, project memory, Terraform, and skill authoring.",
+  "theme": "luma",
+  "primaryColor": "#6366F1",
+  "lightColor": "#EEF2FF",
+  "darkColor": "#312E81",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Skills Reference",
+            "pages": [
+              "skills/bash",
+              "skills/git-commit",
+              "skills/markdown-convert",
+              "skills/project-memory",
+              "skills/terraform",
+              "skills/skill-creator"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/authoring-skills",
+              "guides/evaluating-skills",
+              "guides/skill-structure"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Drop-in skills for Claude Code and Kiro agents via symlink installation",
+    "Bash best practices: main function pattern, argument parsing, error handling, and logging",
+    "Conventional Commits enforcement for consistent git history",
+    "Markdown-to-docx/pdf/html conversion powered by pandoc",
+    "Structured project memory system for tracking decisions, bugs, and key facts",
+    "Terraform and OpenTofu opinionated guidance for modules, testing, and CI/CD",
+    "Skill Creator meta-skill for drafting, evaluating, and iterating on new skills"
+  ],
+  "publicApiSurface": [
+    "bash (SKILL.md)",
+    "git-commit (SKILL.md)",
+    "markdown-convert (SKILL.md)",
+    "project-memory (SKILL.md)",
+    "terraform (SKILL.md)",
+    "skill-creator (SKILL.md)",
+    "bash/templates/script-template.sh"
+  ]
+}

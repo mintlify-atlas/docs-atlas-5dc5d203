@@ -1,0 +1,89 @@
+---
+title: "Project Memory skill: structured agent knowledge base"
+description: "Set up and maintain a structured knowledge base in docs/project_notes/ that tracks bugs, architectural decisions, key facts, and work history across sessions."
+---
+
+The Project Memory skill creates and maintains a structured knowledge base inside a project so that accumulated knowledge — bug solutions, architectural decisions, configuration constants, and work history — persists across sessions. The memory lives in `docs/project_notes/`, a location that looks like standard engineering organization rather than AI-specific tooling, so it fits naturally into any repository.
+
+## When to use
+
+Invoke this skill when:
+
+- Starting a new project that will accumulate knowledge over time
+- The project already has recurring bugs or decisions that should be documented
+- The user asks to "set up project memory" or "track our decisions"
+- Encountering a problem that feels familiar ("didn't we solve this before?")
+- Before proposing an architectural change — check existing decisions first
+
+## Directory structure
+
+When invoked for the first time in a project, the skill creates the following structure:
+
+```
+docs/
+└── project_notes/
+    ├── bugs.md         # Bug log with solutions
+    ├── decisions.md    # Architectural Decision Records
+    ├── key_facts.md    # Project configuration and constants
+    └── issues.md       # Work log with ticket references
+```
+
+<Note>
+`docs/project_notes/` is used instead of `memory/` to make it look like standard engineering organization, not AI-specific tooling.
+</Note>
+
+## The four memory files
+
+<CardGroup cols={2}>
+  <Card title="bugs.md" icon="bug">
+    A log of bugs encountered in the project along with their solutions. When a new bug is resolved, document it here so it can be found quickly if it recurs.
+  </Card>
+  <Card title="decisions.md" icon="check-square">
+    Architectural Decision Records (ADRs) capturing why significant choices were made. Check here before proposing changes to avoid reversing past decisions without knowing the context.
+  </Card>
+  <Card title="key_facts.md" icon="key">
+    Project configuration and constants: credentials, ports, URLs, environment variables, and other facts that are easier to look up here than to rediscover from the code.
+  </Card>
+  <Card title="issues.md" icon="list">
+    A work log linking completed tasks and ongoing work to ticket references. Useful for understanding what has already been done and what is in progress.
+  </Card>
+</CardGroup>
+
+## CLAUDE.md section
+
+After creating the memory infrastructure, the skill adds (or updates) the following section in the project's `CLAUDE.md` file to make the agent memory-aware on every subsequent session:
+
+```markdown
+## Project Memory System
+
+### Memory-Aware Protocols
+
+**Before proposing architectural changes:**
+- Check `docs/project_notes/decisions.md` for existing decisions
+- Verify the proposed approach doesn't conflict with past choices
+
+**When encountering errors or bugs:**
+- Search `docs/project_notes/bugs.md` for similar issues
+- Apply known solutions if found
+- Document new bugs and solutions when resolved
+
+**When looking up project configuration:**
+- Check `docs/project_notes/key_facts.md` for credentials, ports, URLs
+- Prefer documented facts over assumptions
+```
+
+## Memory-aware protocols
+
+Once the memory system is set up, the agent follows these protocols automatically in every session:
+
+<Steps>
+  <Step title="Before proposing architectural changes">
+    Check `docs/project_notes/decisions.md` for existing decisions and verify the proposed approach doesn't conflict with past choices.
+  </Step>
+  <Step title="When encountering errors or bugs">
+    Search `docs/project_notes/bugs.md` for similar issues. Apply known solutions if found. Document new bugs and their solutions when resolved.
+  </Step>
+  <Step title="When looking up project configuration">
+    Check `docs/project_notes/key_facts.md` for credentials, ports, and URLs. Prefer documented facts over assumptions.
+  </Step>
+</Steps>

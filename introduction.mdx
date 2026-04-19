@@ -1,0 +1,80 @@
+---
+title: "What is Agent Skills? Reusable skills for AI agents"
+description: "Agent Skills is a collection of modular SKILL.md files that extend Claude Code and Kiro with bash, git, Terraform, and more — auto-applied by your agent."
+---
+
+Agent Skills is an open-source library of reusable, self-contained skills for Claude Code and Kiro agents. Each skill is a `SKILL.md` file — a plain Markdown document with a YAML frontmatter header — that encodes a specialized workflow or set of conventions. Your agent reads the file and applies its guidance automatically whenever the task matches.
+
+## What is a skill?
+
+A skill is a directory containing a `SKILL.md` file and optional supporting assets (templates, examples). The `SKILL.md` file has a YAML frontmatter block at the top with two required fields:
+
+- **`name`** — a short identifier for the skill (e.g., `bash`, `terraform`)
+- **`description`** — a plain-language explanation of when the skill applies
+
+The description field is what drives automatic triggering. Claude Code and Kiro read it to decide whether a skill is relevant to the current task.
+
+```yaml
+---
+name: bash
+description: Apply comprehensive bash scripting standards including main function
+  pattern, usage documentation, argument parsing, dependency checking, and error
+  handling. Triggers when creating/editing .sh files, bash scripts, or discussing
+  shell scripting, deployment scripts, automation tasks, or bash conventions.
+---
+```
+
+## How agents trigger skills
+
+Claude Code and Kiro scan your skills directory at startup and load the frontmatter from every `SKILL.md` file they find. When you make a request, the agent matches your intent against each skill's `description` field and loads the full skill content if there is a match.
+
+This means you never have to explicitly invoke a skill. Ask your agent to "write a bash script that backs up a directory" and it will apply the bash skill automatically — enforcing the main-function pattern, strict error handling, timestamped logging, and more.
+
+You can also reference a skill explicitly using `@`-syntax in Claude Code and Kiro (e.g., `@bash write a deployment script`). This is useful when you want to force a skill to apply or when working in a context where auto-triggering would not fire.
+
+## Available skills
+
+<CardGroup cols={2}>
+  <Card title="Bash" icon="terminal" href="/skills/bash">
+    Enforce the main-function pattern, argument parsing, dependency checking, and timestamped logging in every shell script.
+  </Card>
+  <Card title="Git Commit" icon="code-branch" href="/skills/git-commit">
+    Write commit messages that follow the Conventional Commits specification automatically.
+  </Card>
+  <Card title="Markdown Convert" icon="file-lines" href="/skills/markdown-convert">
+    Convert any markdown file to Word, PDF, or HTML using pandoc with a single request.
+  </Card>
+  <Card title="Project Memory" icon="database" href="/skills/project-memory">
+    Set up a structured knowledge base that tracks bugs, decisions, key facts, and work history across sessions.
+  </Card>
+  <Card title="Terraform" icon="cloud" href="/skills/terraform">
+    Apply opinionated Terraform and OpenTofu best practices for modules, naming, testing, and CI/CD pipelines.
+  </Card>
+  <Card title="Skill Creator" icon="wand-magic-sparkles" href="/skills/skill-creator">
+    Draft, evaluate, and iteratively improve new skills using a built-in test-and-review workflow.
+  </Card>
+</CardGroup>
+
+## Skill directory structure
+
+Each skill lives in its own directory inside the cloned repository:
+
+```
+agent-skills/
+├── bash/
+│   ├── SKILL.md
+│   └── templates/
+│       └── script-template.sh
+├── git-commit/
+│   └── SKILL.md
+├── markdown-convert/
+│   └── SKILL.md
+├── project-memory/
+│   └── SKILL.md
+├── terraform/
+│   └── SKILL.md
+└── skill-creator/
+    └── SKILL.md
+```
+
+Some skills include additional assets alongside `SKILL.md` — for example, the `bash` skill ships a `templates/script-template.sh` starter file. The agent loads only `SKILL.md` by default; bundled files are loaded on demand when instructed by the skill body.

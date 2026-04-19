@@ -1,0 +1,192 @@
+---
+title: "Skill structure: files, frontmatter, and resources"
+description: "Understand the anatomy of a skill directory — required files, optional resources, frontmatter fields, and the three-level loading system."
+---
+
+Every skill is a self-contained directory with a required `SKILL.md` file at its root. The directory can also include a human-facing `README.md` and optional bundled resources like scripts, reference docs, and templates. Understanding how these pieces fit together helps you write skills that are organized, performant, and easy to maintain.
+
+## Directory layout
+
+```
+skill-name/
+├── SKILL.md              # Required — skill definition loaded by the agent
+├── README.md             # Recommended — human-facing docs and installation instructions
+├── scripts/              # Optional — executable scripts for deterministic tasks
+├── references/           # Optional — reference docs loaded into context as needed
+├── assets/               # Optional — templates, icons, fonts used in output
+└── templates/            # Optional — script or file starter templates
+```
+
+Not every skill needs bundled resources. A focused skill like `git-commit` is just `SKILL.md` and `README.md` — the instructions fit in a single file with no external dependencies.
+
+## SKILL.md frontmatter
+
+Every `SKILL.md` opens with a YAML frontmatter block. Two fields are required; the rest are optional.
+
+```yaml
+---
+name: skill-name
+description: >
+  What the skill does and when to use it. This is the primary triggering
+  mechanism — include both capabilities and specific contexts for invocation.
+---
+```
+
+### Required fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Skill identifier. Use kebab-case, matching the directory name. |
+| `description` | Trigger mechanism. Must describe what the skill does AND when to invoke it. All "when to use" context belongs here, not in the body. |
+
+### Optional fields
+
+| Field | Description |
+|-------|-------------|
+| `license` | License identifier (e.g., `MIT`). |
+| `metadata.version` | Semantic version string (e.g., `1.0.0`). |
+| `compatibility` | Required tools or dependencies. Rarely needed. |
+
+### Writing an effective description
+
+The description is the only thing Claude reads when deciding whether to load a skill. It must be specific enough to trigger on relevant prompts without overtriggering on unrelated ones.
+
+Include explicit signal phrases — file extensions, tool names, workflow keywords — and add exclusions for skills with close neighbors:
+
+```yaml
+description: >
+  Help write git commit messages using standard git conventions. Use this skill
+  when the user asks to write, generate, format, or review a git commit message,
+  or when they need help phrasing a commit. Do NOT use for branches, PRs,
+  merges, or other git operations — only for commit message writing.
+```
+
+See [authoring skills](/guides/authoring-skills) for more guidance on writing trigger descriptions.
+
+## The three-level loading system
+
+Skills use progressive disclosure to keep context window usage efficient. Content is loaded in three levels, from always-present to on-demand:
+
+<Steps>
+  <Step title="Level 1 — Metadata (always in context)">
+    The `name` and `description` fields from every installed skill's frontmatter are always present in Claude's context. This is approximately 100 words per skill. Claude uses this metadata to decide whether to consult a skill for a given request.
+
+    Because metadata is always loaded, keep descriptions concise and focused. Every extra sentence costs context window space on every single conversation.
+  </Step>
+  <Step title="Level 2 — SKILL.md body (loaded when skill triggers)">
+    The full body of `SKILL.md` — everything below the frontmatter block — is loaded into context when Claude decides the skill is relevant. This includes all instructions, examples, workflow steps, and inline code.
+
+    Keep the body under 500 lines. If you're approaching that limit, move reference material into a `references/` subdirectory and add explicit pointers from the body so Claude knows when to load each file.
+  </Step>
+  <Step title="Level 3 — Bundled resources (loaded on demand)">
+    Scripts, reference docs, and other assets in the skill directory are not loaded automatically. Claude loads them only when instructed to do so by the skill body, or when explicitly referenced by the user.
+
+    Because bundled resources are loaded only when needed, there is no practical size limit. Large reference files (over 300 lines) should include a table of contents so Claude can navigate them efficiently.
+  </Step>
+</Steps>
+
+## Bundled resource conventions
+
+When a skill needs external files, organize them by type inside the skill directory:
+
+<CardGroup cols={2}>
+  <Card title="scripts/" icon="terminal">
+    Executable scripts for deterministic or repetitive tasks. Bundling a script means every invocation uses the same implementation rather than Claude regenerating it from scratch each time.
+  </Card>
+  <Card title="references/" icon="book-open">
+    Reference documentation loaded into context as needed. Use this for large schemas, API docs, or domain-specific knowledge that only some tasks require.
+  </Card>
+  <Card title="assets/" icon="folder">
+    Static files used in output: templates, icons, fonts, or starter files that Claude copies or adapts for the user.
+  </Card>
+  <Card title="templates/" icon="file-code">
+    Script or file templates — parameterized starter files. For example, `bash/templates/` contains a starter bash script skeleton.
+  </Card>
+</CardGroup>
+
+Reference files from `SKILL.md` with explicit guidance on when to read them:
+
+```markdown
+For cloud provider-specific details, read `references/aws.md`, `references/gcp.md`,
+or `references/azure.md` based on the user's target platform.
+```
+
+### Example: bash skill structure
+
+The `bash` skill bundles a script template that Claude uses when generating new scripts:
+
+```
+bash/
+├── SKILL.md              # Skill definition with full bash best practices
+└── templates/
+    └── script-template.sh  # Starter bash script template
+```
+
+When creating a new bash script, Claude loads the template from `templates/script-template.sh` rather than reconstructing the standard structure from memory on every invocation. This ensures consistency and saves generation time.
+
+## README.md required sections
+
+The `README.md` is the human-facing entry point — for someone discovering the skill on GitHub, in a shared folder, or via a `.skill` file. It should be readable in 30 seconds.
+
+<AccordionGroup>
+  <Accordion title="Title and one-liner">
+    A level-one heading with the skill name, followed by a single sentence describing what it does.
+  </Accordion>
+  <Accordion title="Overview">
+    3-5 bullet points covering the main capabilities. This is the at-a-glance summary for someone deciding whether to install the skill.
+  </Accordion>
+  <Accordion title="Installation">
+    Symlink instructions for Claude Code and Kiro, both global and project-scoped. See the installation template below.
+  </Accordion>
+  <Accordion title="Usage">
+    3-5 concrete example prompts a real user would type. Make them specific — not "Create a bash script" but "Write a bash script that watches a directory for new CSV files and processes each one through a Python script." Show the range of things the skill handles.
+  </Accordion>
+  <Accordion title="Project structure">
+    A file tree showing the skill's files with brief inline annotations.
+  </Accordion>
+</AccordionGroup>
+
+### Installation section template
+
+Use this template in your README. Adapt it to the actual distribution method — if there's no git repo, skip the clone steps:
+
+```markdown
+## Installation
+
+### Recommended: symlink installation
+
+Using a symlink keeps the skill up to date when you pull changes:
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd <skill-name>
+
+# Install globally (available in all Claude Code projects)
+ln -s $(pwd) ~/.claude/skills/<skill-name>
+
+# Or install for a specific project only
+ln -s $(pwd) /path/to/project/.claude/skills/<skill-name>
+```
+
+To update later: `cd <skill-name> && git pull`
+
+### Alternative: direct copy
+
+```bash
+git clone <repo-url>
+cp -r <skill-name> ~/.claude/skills/<skill-name>/
+```
+
+Note: with this method, re-copy after updates.
+```
+
+## What not to create alongside a skill
+
+Don't create extra documentation files in the skill directory:
+
+- `INSTALLATION_GUIDE.md` — installation instructions belong in `README.md`.
+- `QUICK_REFERENCE.md` — unless it IS the skill content, it belongs in `references/`.
+- `CHANGELOG.md` — not needed for a skill directory.
+
+A `README.md` is appropriate because it serves a clear purpose: it's the first thing a human reads when discovering the skill. Every other file in the directory should only exist if it's directly needed to do the job.

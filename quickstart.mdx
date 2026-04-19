@@ -1,80 +1,97 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quickstart: install your first Agent Skill in minutes"
+description: "Learn how to install the bash skill for Claude Code or Kiro in under five minutes, and verify it works by asking your agent to write a shell script."
 ---
 
-## Get started in three steps
+Agent Skills works by symlinking skill directories into your agent's skills folder. Once installed, the agent discovers and applies skills automatically when they're relevant — no extra prompting required. This guide walks you through cloning the repository and installing your first skill.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Clone the repository">
+    Clone the `agent-skills` repository once to a local directory. You'll install individual skills from here using symlinks.
 
-### Step 1: Set up your local environment
+    ```bash
+    git clone git@github.com:dmorand17/agent-skills.git
+    cd agent-skills
+    ```
+  </Step>
+  <Step title="Symlink a skill into your agent's skills folder">
+    Create a symlink from the skill directory into `~/.claude/skills/` (for Claude Code) or `~/.kiro/skills/` (for Kiro). The example below installs the `bash` skill globally.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Tabs>
+      <Tab title="Claude Code">
+        ```bash
+        ln -s $(pwd)/bash ~/.claude/skills/bash
+        ```
+      </Tab>
+      <Tab title="Kiro">
+        ```bash
+        ln -s $(pwd)/bash ~/.kiro/skills/bash
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Verify the symlink is in place">
+    Confirm the skill directory is visible in your agent's skills folder:
 
-### Step 2: Deploy your changes
+    ```bash
+    ls ~/.claude/skills/
+    # bash -> /path/to/agent-skills/bash
+    ```
+  </Step>
+  <Step title="Try it out">
+    Open Claude Code (or Kiro) and ask your agent to write a bash script:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    > "Write a bash script that backs up a directory to a timestamped archive."
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    The agent should automatically apply the bash skill's conventions: `#!/usr/bin/env bash`, `set -euo pipefail`, a `main()` entry point, usage function, argument parsing, dependency checking, and timestamped `log_*` logging.
+  </Step>
+</Steps>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+## Install all skills at once
 
-### Step 3: Go live
+To install every skill in a single command, use this loop:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+<CodeGroup>
+```bash Claude Code
+for skill in bash skill-creator git-commit markdown-convert project-memory terraform; do
+  ln -sf "$(pwd)/$skill" ~/.claude/skills/$skill
+done
+```
 
-## Next steps
+```bash Kiro
+for skill in bash skill-creator git-commit markdown-convert project-memory terraform; do
+  ln -sf "$(pwd)/$skill" ~/.kiro/skills/$skill
+done
+```
+</CodeGroup>
 
-Now that you have your docs running, explore these key features:
+## Project-scoped installation
 
-<CardGroup cols={2}>
+Install a skill for a single project instead of globally by symlinking into the project's local skills directory:
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    ln -s $(pwd)/terraform /path/to/project/.claude/skills/terraform
+    ```
+  </Tab>
+  <Tab title="Kiro">
+    ```bash
+    ln -s $(pwd)/terraform /path/to/project/.kiro/skills/terraform
+    ```
+  </Tab>
+</Tabs>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+## Keeping skills up to date
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+Because you installed skills via symlinks, updating is a single `git pull`:
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+```bash
+cd agent-skills && git pull
+```
 
-</CardGroup>
+All installed skills update automatically — no re-linking needed.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Ready to install all skills or learn about advanced installation options? See the [Installation guide](/installation).
 </Note>

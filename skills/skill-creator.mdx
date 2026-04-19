@@ -1,0 +1,167 @@
+---
+title: "Skill Creator: build, evaluate, and improve agent skills"
+description: "Create new agent skills from scratch, iterate on drafts with qualitative and quantitative evals, and optimize skill descriptions for reliable auto-triggering."
+---
+
+The Skill Creator is a skill for building and iteratively improving other skills. It guides you through capturing intent, interviewing the user for edge cases, writing a `SKILL.md` and `README.md`, running test cases with and without the skill, reviewing qualitative and quantitative results, and repeating until the skill is solid. It also includes a description optimization loop that improves how reliably a skill auto-triggers.
+
+## When to use
+
+Use the Skill Creator when you want to:
+
+- Create a skill from scratch based on a workflow or domain
+- Edit or refine an existing skill based on new requirements
+- Run evaluations to test whether a skill improves outputs
+- Benchmark skill performance with variance analysis
+- Optimize a skill's description for better triggering accuracy
+
+## High-level process
+
+The overall loop is:
+
+1. **Capture intent** — understand what the skill should do and when it should trigger
+2. **Draft the skill** — write `SKILL.md` (and `README.md`) based on the interview
+3. **Run test cases** — spawn with-skill and baseline runs in parallel for each eval prompt
+4. **Evaluate results** — review outputs qualitatively and check quantitative assertions
+5. **Iterate** — revise the skill based on feedback and repeat until satisfied
+6. **Optimize the description** — run the description optimization loop for reliable triggering
+7. **Package** — produce a `.skill` file for distribution (if `present_files` tool is available)
+
+## Creating a skill
+
+### Capture intent
+
+Start by understanding the user's intent. If the current conversation already contains a workflow the user wants to capture (e.g., "turn this into a skill"), extract the answers from the conversation history first — the tools used, the sequence of steps, corrections made, input/output formats observed.
+
+Key questions to resolve:
+
+1. What should this skill enable the agent to do?
+2. When should this skill trigger? (what user phrases or contexts)
+3. What is the expected output format?
+4. Are test cases needed? Skills with objectively verifiable outputs (file transforms, data extraction, code generation) benefit from them; skills with subjective outputs (writing style, tone) often don't.
+
+### Interview and research
+
+Proactively ask about edge cases, input/output formats, example files, success criteria, and dependencies before writing test prompts. Check available MCPs — if useful for research, research in parallel via subagents when available.
+
+### Write the SKILL.md
+
+Based on the interview, produce a `SKILL.md` with these components:
+
+- **`name`** — skill identifier (e.g., `git-commit`)
+- **`description`** — when to trigger and what the skill does; this is the primary auto-triggering mechanism; include both what it does AND specific contexts; make it slightly "pushy" to combat undertriggering
+- **`compatibility`** — required tools or dependencies (optional, rarely needed)
+- **The skill body** — instructions, workflows, examples, reference pointers
+
+### Write the README.md
+
+After drafting `SKILL.md`, create a human-facing `README.md` with:
+
+1. Title and one-line description
+2. Overview (3–5 bullets covering main capabilities)
+3. Installation — symlink method (recommended) and direct copy alternative
+4. Usage — when it activates, plus 3–5 concrete example prompts a real user would type
+5. Project structure — file tree with brief annotations
+
+<Note>
+Don't duplicate `SKILL.md` content in the README. The README is for humans setting up the skill, not instructions for the agent. Keep it short enough to skim in 30 seconds.
+</Note>
+
+## SKILL.md anatomy
+
+```
+skill-name/
+├── SKILL.md (required)
+│   ├── YAML frontmatter (name, description required)
+│   └── Markdown instructions
+├── README.md (recommended)
+└── Bundled Resources (optional)
+    ├── scripts/    - Executable code for deterministic/repetitive tasks
+    ├── references/ - Docs loaded into context as needed
+    └── assets/     - Files used in output (templates, icons, fonts)
+```
+
+Skills use a three-level loading system:
+
+| Level | Content | Always in context? |
+|-------|---------|-------------------|
+| Metadata | `name` + `description` (~100 words) | Yes |
+| SKILL.md body | Full instructions (under 500 lines ideal) | When skill triggers |
+| Bundled resources | Scripts, references, assets (unlimited) | On demand |
+
+Keep `SKILL.md` under 500 lines. If approaching that limit, add a layer of hierarchy with clear pointers about where to read next.
+
+## Writing principles
+
+### Concise is key
+
+The context window is shared with system prompts, conversation history, and user requests. Only add context the agent doesn't already have. Challenge each piece with "Does the agent really need this?" and "Does this justify its token cost?" Prefer concise examples over verbose explanations.
+
+### Set appropriate degrees of freedom
+
+Match specificity to the task's fragility and variability:
+
+<CardGroup cols={3}>
+  <Card title="High freedom" icon="arrows-expand">
+    Use plain text instructions when multiple approaches are valid or decisions depend on context.
+  </Card>
+  <Card title="Medium freedom" icon="sliders">
+    Use pseudocode or parameterized scripts when a preferred pattern exists but some variation is acceptable.
+  </Card>
+  <Card title="Low freedom" icon="lock">
+    Use specific scripts with few parameters when operations are fragile, consistency is critical, or a fixed sequence must be followed.
+  </Card>
+</CardGroup>
+
+### Progressive disclosure
+
+- Keep `SKILL.md` under 500 lines; offload large reference content to `references/`
+- Reference bundled files from `SKILL.md` with guidance on when to read them
+- For large reference files (>300 lines), include a table of contents
+
+### Explain the why
+
+Try to explain *why* things are important rather than issuing heavy-handed directives. LLMs respond better to reasoning than to rigid MUST/NEVER constraints. If you find yourself writing `ALWAYS` or `NEVER` in all caps, reframe and explain the reasoning instead.
+
+## Description optimization
+
+The `description` field in `SKILL.md` frontmatter is the primary mechanism that determines whether the agent invokes a skill. After creating or improving a skill, offer to optimize the description for better triggering accuracy.
+
+The optimization process:
+
+<Steps>
+  <Step title="Generate trigger eval queries">
+    Create 20 eval queries — a mix of should-trigger and should-not-trigger. Focus on near-misses and edge cases rather than clear-cut examples. Save as JSON with `should_trigger` booleans.
+  </Step>
+  <Step title="Review with user">
+    Present the eval set via an HTML review interface so the user can edit queries, toggle should-trigger, add or remove entries, and export the final set.
+  </Step>
+  <Step title="Run the optimization loop">
+    ```bash
+    python -m scripts.run_loop \
+      --eval-set <path-to-trigger-eval.json> \
+      --skill-path <path-to-skill> \
+      --model <model-id> \
+      --max-iterations 5 \
+      --verbose
+    ```
+    The loop splits the eval set 60/40 train/test, evaluates the current description (running each query 3× for reliability), proposes improvements, and iterates up to 5 times. The best description is selected by test score to avoid overfitting.
+  </Step>
+  <Step title="Apply the result">
+    Take `best_description` from the JSON output and update the skill's `SKILL.md` frontmatter. Show the user before/after and report the scores.
+  </Step>
+</Steps>
+
+<Tip>
+Understanding triggering: Claude only consults skills for tasks it can't easily handle on its own. Simple, one-step queries may not trigger a skill even if the description matches perfectly. Make eval queries substantive enough that the agent would genuinely benefit from consulting the skill.
+</Tip>
+
+## Package and present
+
+After the skill is complete, package it into a `.skill` file for easy distribution:
+
+```bash
+python -m scripts.package_skill <path/to/skill-folder>
+```
+
+If the `present_files` tool is available, present the resulting `.skill` file directly to the user. Otherwise, direct them to the output path.
